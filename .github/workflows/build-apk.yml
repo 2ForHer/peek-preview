@@ -22,17 +22,18 @@ jobs:
 
     steps:
       - name: Checkout exact repository source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Set up Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "22"
+          package-manager-cache: false
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
@@ -74,9 +75,28 @@ jobs:
           test -s Peek-Preview.apk
 
       - name: Upload installable APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: Peek-Preview.apk
           path: Peek-Preview.apk
+          archive: false
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.version.outputs.name }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" Peek-Preview.apk --clobber
+            gh release edit "$TAG" \
+              --title "Peek Preview $TAG" \
+              --notes "Automated production build from ${{ github.sha }}." \
+              --latest
+          else
+            gh release create "$TAG" Peek-Preview.apk \
+              --target "${{ github.sha }}" \
+              --title "Peek Preview $TAG" \
+              --notes "Automated production build from ${{ github.sha }}." \
+              --latest
+          fi
