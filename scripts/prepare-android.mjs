@@ -22,7 +22,7 @@ const customFiles = [
   "app/src/main/AndroidManifest.xml",
   "app/src/main/res/xml/file_paths.xml",
   "app/src/main/res/xml/data_extraction_rules.xml",
-  "app/src/main/java/com/peekpreview/app/MainActivity.java",
+  "app/src/main/java/com/peekpreview/grok/MainActivity.java",
 ];
 
 const requiredPlatformFiles = [

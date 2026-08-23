@@ -1,24 +1,9 @@
-# Peek Preview
+# Peek Grok
 
-On-device highlight sampler. Cut clips, crop, add transitions and a watermark, then export an MP4 — all on the device.
+Grok rebuild of Peek Preview. **Separate Android app** from the Lovable build (`peep-and-peek`). Installing this does not replace Lovable Peek.
 
 ## Download the Android APK
 
-This is the page:
+https://github.com/MorrissaHotwife/peek-preview/releases
 
-https://github.com/orgs/MorrissaHotwife/repositories
-
-Open **peek-preview** → **Actions** → latest **Build Peek Preview APK** run → artifact **Peek-Preview.apk**.
-
-Direct Actions list:
-
-https://github.com/MorrissaHotwife/peek-preview/actions
-
-You must be logged in as MorrissaHotwife. The repo is private.
-
-## Run in the browser
-
-```bash
-npm install
-npm run dev
-```
+Artifact name: **Peek-Grok.apk**. Phone launcher name: **Peek Grok**.

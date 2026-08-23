@@ -1,4 +1,4 @@
-name: Build Peek Preview APK
+name: Build Peek Grok APK
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: peek-preview-release
+  group: peek-preview-grok-release
   cancel-in-progress: true
 
 jobs:
@@ -48,36 +48,36 @@ jobs:
           echo "code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
           echo "name=1.0.$VERSION_CODE" >> "$GITHUB_OUTPUT"
 
-      - name: Restore permanent release keystore
+      - name: Restore Grok-only release keystore
         run: |
-          base64 -d signing/peek-preview-release.jks.base64 > "$RUNNER_TEMP/peek-preview-release.jks"
-          chmod 600 "$RUNNER_TEMP/peek-preview-release.jks"
+          base64 -d signing/peek-preview-grok-release.jks.base64 > "$RUNNER_TEMP/peek-preview-grok-release.jks"
+          chmod 600 "$RUNNER_TEMP/peek-preview-grok-release.jks"
           keytool -list \
-            -keystore "$RUNNER_TEMP/peek-preview-release.jks" \
-            -storepass "PeekPreview-Private-2026" \
-            -alias peekpreview > /dev/null
+            -keystore "$RUNNER_TEMP/peek-preview-grok-release.jks" \
+            -storepass "PeekGrok-Release-2026" \
+            -alias peekpreviewgrok > /dev/null
 
       - name: Build signed release APK
         env:
           PEEK_BUILD_VARIANT: release
           PEEK_VERSION_CODE: ${{ steps.version.outputs.code }}
           PEEK_VERSION_NAME: ${{ steps.version.outputs.name }}
-          PEEK_KEYSTORE_PASSWORD: "PeekPreview-Private-2026"
-          PEEK_KEY_ALIAS: peekpreview
-          PEEK_KEY_PASSWORD: "PeekPreview-Private-2026"
+          PEEK_KEYSTORE_PASSWORD: "PeekGrok-Release-2026"
+          PEEK_KEY_ALIAS: peekpreviewgrok
+          PEEK_KEY_PASSWORD: "PeekGrok-Release-2026"
         run: |
-          export PEEK_KEYSTORE_PATH="$RUNNER_TEMP/peek-preview-release.jks"
+          export PEEK_KEYSTORE_PATH="$RUNNER_TEMP/peek-preview-grok-release.jks"
           npm run android:apk
 
       - name: Stage APK artifact
         run: |
-          cp android/app/build/outputs/apk/release/app-release.apk Peek-Preview.apk
-          test -s Peek-Preview.apk
+          cp android/app/build/outputs/apk/release/app-release.apk Peek-Grok.apk
+          test -s Peek-Grok.apk
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v7
         with:
-          path: Peek-Preview.apk
+          path: Peek-Grok.apk
           archive: false
           if-no-files-found: error
           retention-days: 14
@@ -88,15 +88,15 @@ jobs:
           TAG: v${{ steps.version.outputs.name }}
         run: |
           if gh release view "$TAG" > /dev/null 2>&1; then
-            gh release upload "$TAG" Peek-Preview.apk --clobber
+            gh release upload "$TAG" Peek-Grok.apk --clobber
             gh release edit "$TAG" \
-              --title "Peek Preview $TAG" \
-              --notes "Automated production build from ${{ github.sha }}." \
+              --title "Peek Grok $TAG" \
+              --notes "Separate Grok app. Does not replace Lovable Peek Preview." \
               --latest
           else
-            gh release create "$TAG" Peek-Preview.apk \
+            gh release create "$TAG" Peek-Grok.apk \
               --target "${{ github.sha }}" \
-              --title "Peek Preview $TAG" \
-              --notes "Automated production build from ${{ github.sha }}." \
+              --title "Peek Grok $TAG" \
+              --notes "Separate Grok app. Does not replace Lovable Peek Preview." \
               --latest
           fi
