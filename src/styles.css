@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@source "./**/*.{ts,tsx}";
+@source "../mobile/**/*.{html,tsx}";
 
 @theme {
   --color-bg: #0a0a0b;
@@ -26,7 +28,8 @@
 @layer base {
   html,
   body,
-  #app {
+  #app,
+  #root {
     height: 100dvh;
     max-height: 100dvh;
     width: 100%;
