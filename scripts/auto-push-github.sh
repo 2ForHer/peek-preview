@@ -46,6 +46,9 @@ sync_once() {
     git pull --rebase origin main || true
     git push origin main || true
   fi
+  if git remote get-url morrissa >/dev/null 2>&1; then
+    git push morrissa main || true
+  fi
 }
 
 sync_once || true
