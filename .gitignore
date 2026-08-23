@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-mobile/
 .output/
 .tanstack/
 .vercel/
@@ -15,3 +16,11 @@ screenshots/
 .DS_Store
 AGENTS.md
 *.local
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/app/src/main/assets/
+android/capacitor-cordova-android-plugins/
+android/app/capacitor.build.gradle
+android/capacitor.settings.gradle

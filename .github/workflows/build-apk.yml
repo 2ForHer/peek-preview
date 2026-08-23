@@ -1,0 +1,82 @@
+name: Build Peek Preview APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "public/updates/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: peek-preview-release
+  cancel-in-progress: true
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout exact repository source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install JavaScript dependencies
+        run: npm install
+
+      - name: Compute release version
+        id: version
+        run: |
+          VERSION_CODE=${{ github.run_number }}
+          echo "code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "name=1.0.$VERSION_CODE" >> "$GITHUB_OUTPUT"
+
+      - name: Restore permanent release keystore
+        run: |
+          base64 -d signing/peek-preview-release.jks.base64 > "$RUNNER_TEMP/peek-preview-release.jks"
+          chmod 600 "$RUNNER_TEMP/peek-preview-release.jks"
+          keytool -list \
+            -keystore "$RUNNER_TEMP/peek-preview-release.jks" \
+            -storepass "PeekPreview-Private-2026" \
+            -alias peekpreview > /dev/null
+
+      - name: Build signed release APK
+        env:
+          PEEK_BUILD_VARIANT: release
+          PEEK_VERSION_CODE: ${{ steps.version.outputs.code }}
+          PEEK_VERSION_NAME: ${{ steps.version.outputs.name }}
+          PEEK_KEYSTORE_PASSWORD: "PeekPreview-Private-2026"
+          PEEK_KEY_ALIAS: peekpreview
+          PEEK_KEY_PASSWORD: "PeekPreview-Private-2026"
+        run: |
+          export PEEK_KEYSTORE_PATH="$RUNNER_TEMP/peek-preview-release.jks"
+          npm run android:apk
+
+      - name: Stage APK artifact
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk Peek-Preview.apk
+          test -s Peek-Preview.apk
+
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Peek-Preview.apk
+          path: Peek-Preview.apk
+          if-no-files-found: error
+          retention-days: 14
