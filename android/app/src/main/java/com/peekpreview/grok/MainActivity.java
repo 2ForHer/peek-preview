@@ -1,4 +1,4 @@
-package com.peekpreview.app;
+package com.peekpreview.grok;
 
 import com.getcapacitor.BridgeActivity;
 
