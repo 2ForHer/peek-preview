@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import { useEffect, useState } from "react";
 import { EditorShell } from "@/components/peek/editor-shell";
 import { HomeScreen } from "@/components/peek/home-screen";
@@ -10,6 +11,7 @@ export function PeekApp() {
   const mode = useEditor((s) => s.mode);
   const install = usePwaInstall();
   const [installOpen, setInstallOpen] = useState(false);
+  const native = Capacitor.isNativePlatform();
 
   useEffect(() => {
     void loadImageUrl("/mark.svg")
@@ -24,7 +26,7 @@ export function PeekApp() {
   }, []);
 
   const installProps = {
-    showInstall: !install.installed,
+    showInstall: !native && !install.installed,
     onInstall: () => setInstallOpen(true),
   };
 
@@ -35,7 +37,7 @@ export function PeekApp() {
       ) : (
         <EditorShell {...installProps} />
       )}
-      {installOpen ? (
+      {installOpen && !native ? (
         <InstallSheet install={install} onClose={() => setInstallOpen(false)} />
       ) : null}
     </>

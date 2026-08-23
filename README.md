@@ -1,31 +1,24 @@
 # Peek Preview
 
-On-device highlight sampler. Cut clips, crop, add transitions and a watermark, then export an MP4 — all in the browser. Nothing is uploaded.
+On-device highlight sampler. Cut clips, crop, add transitions and a watermark, then export an MP4 — all on the device.
 
-This GitHub repo **auto-syncs** from the Peek Preview builder. You do not need to push by hand.
+## Download the Android APK
 
-## Install on your phone
+This is the page:
 
-GitHub is the **source code**, not the live app.
+https://github.com/orgs/MorrissaHotwife/repositories
 
-1. Open the published Peek Preview link from Grok (the `*.grok.me` share URL) in **Chrome**
-2. Chrome menu → **Install app** / Add to Home Screen
+Open **peek-preview** → **Actions** → latest **Build Peek Preview APK** run → artifact **Peek-Preview.apk**.
 
-Do not try to install from the in-chat preview. Chrome will not offer a real install there.
+Direct Actions list:
 
-## Run locally
+https://github.com/MorrissaHotwife/peek-preview/actions
+
+You must be logged in as MorrissaHotwife. The repo is private.
+
+## Run in the browser
 
 ```bash
 npm install
 npm run dev
 ```
-
-Then open the URL Vite prints and use it as a PWA from a normal browser tab.
-
-## What it does
-
-- Import clips or load the demo reel
-- Cut, crop, and move the frame
-- Fade / slide / zoom / twist between cuts
-- Drag a watermark
-- Export a composed MP4 on-device

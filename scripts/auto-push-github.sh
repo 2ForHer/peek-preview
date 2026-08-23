@@ -20,9 +20,15 @@ public
 scripts
 server
 migrations
+mobile
+android
+signing
+.github
 package.json
 package-lock.json
 vite.config.ts
+vite.mobile.config.ts
+capacitor.config.ts
 tsconfig.json
 eslint.config.mjs
 README.md
