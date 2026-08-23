@@ -2,6 +2,8 @@
 
 On-device highlight sampler. Cut clips, crop, add transitions and a watermark, then export an MP4 — all in the browser. Nothing is uploaded.
 
+This GitHub repo **auto-syncs** from the Peek Preview builder. You do not need to push by hand.
+
 ## Install on your phone
 
 GitHub is the **source code**, not the live app.
