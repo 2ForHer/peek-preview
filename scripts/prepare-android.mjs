@@ -23,6 +23,12 @@ const customFiles = [
   "app/src/main/res/xml/file_paths.xml",
   "app/src/main/res/xml/data_extraction_rules.xml",
   "app/src/main/java/com/peekpreview/grok/MainActivity.java",
+  "app/src/main/java/com/peekpreview/grok/PeekVideoDecoder.java",
+  "app/src/main/java/com/peekpreview/grok/PeekGlScene.java",
+  "app/src/main/java/com/peekpreview/grok/PeekComposePlayer.java",
+  "app/src/main/java/com/peekpreview/grok/PeekComposeEngine.java",
+  "app/src/main/java/com/peekpreview/grok/PeekPreviewPlugin.java",
+  "app/src/main/java/com/peekpreview/grok/PeekSurfaceHost.java",
 ];
 
 const requiredPlatformFiles = [
@@ -108,5 +114,11 @@ if (!hasCompleteAndroidPlatform()) {
 }
 
 run(npxCommand, ["--yes", "@capacitor/cli@8.4.0", "sync", "android"]);
+
+// Capacitor sync can overwrite MainActivity; always re-apply preserved custom sources.
+{
+  const preservedFiles = readCustomFiles();
+  restoreCustomFiles(preservedFiles);
+}
 
 console.log("Android project prepared successfully.");
