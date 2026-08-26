@@ -2,9 +2,13 @@ package com.peekpreview.grok;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.util.Base64;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Surface;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -17,7 +21,83 @@ public class PeekPreviewPlugin extends Plugin {
     private static final String TAG = "PeekPreviewPlugin";
 
     private PeekComposePlayer player;
+    private PeekSurfaceHost surfaceHost;
     private Surface surface;
+    private int surfaceW;
+    private int surfaceH;
+    private boolean surfaceReady;
+
+    @PluginMethod
+    public void attach(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            try {
+                if (surfaceHost != null) {
+                    call.resolve();
+                    return;
+                }
+                surfaceHost = new PeekSurfaceHost(getContext());
+                surfaceHost.setCallback(new PeekSurfaceHost.Callback() {
+                    @Override
+                    public void onSurfaceReady(Surface s, int width, int height) {
+                        surface = s;
+                        surfaceW = width;
+                        surfaceH = height;
+                        surfaceReady = true;
+                        JSObject ev = new JSObject();
+                        ev.put("width", width);
+                        ev.put("height", height);
+                        notifyListeners("surfaceReady", ev);
+                    }
+
+                    @Override
+                    public void onSurfaceDestroyed() {
+                        surface = null;
+                        surfaceReady = false;
+                        if (player != null) {
+                            player.pause();
+                        }
+                        notifyListeners("surfaceDestroyed", new JSObject());
+                    }
+                });
+
+                FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        Gravity.CENTER);
+                surfaceHost.setLayoutParams(lp);
+                surfaceHost.setBackgroundColor(Color.BLACK);
+
+                // Insert behind the WebView so the React chrome stays on top
+                ViewGroup content = (ViewGroup) getBridge().getWebView().getParent();
+                if (content != null) {
+                    content.addView(surfaceHost, 0);
+                }
+
+                call.resolve();
+            } catch (Exception e) {
+                Log.e(TAG, "attach failed", e);
+                call.reject(e.getMessage(), e);
+            }
+        });
+    }
+
+    @PluginMethod
+    public void detach(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            if (player != null) {
+                player.release();
+                player = null;
+            }
+            if (surfaceHost != null) {
+                ViewGroup parent = (ViewGroup) surfaceHost.getParent();
+                if (parent != null) parent.removeView(surfaceHost);
+                surfaceHost = null;
+            }
+            surface = null;
+            surfaceReady = false;
+            call.resolve();
+        });
+    }
 
     @PluginMethod
     public void prepare(PluginCall call) {
@@ -28,12 +108,12 @@ public class PeekPreviewPlugin extends Plugin {
             call.reject("path required");
             return;
         }
-        if (surface == null) {
-            call.reject("surface not set — call setSurface first from native view");
-            return;
-        }
         getActivity().runOnUiThread(() -> {
             try {
+                if (!surfaceReady || surface == null) {
+                    call.reject("surface not ready — call attach first");
+                    return;
+                }
                 if (player != null) {
                     player.release();
                 }
@@ -54,7 +134,9 @@ public class PeekPreviewPlugin extends Plugin {
                         notifyListeners("error", ev);
                     }
                 });
-                player.prepare(path, surface, width, height);
+                int w = surfaceW > 0 ? surfaceW : width;
+                int h = surfaceH > 0 ? surfaceH : height;
+                player.prepare(path, surface, w, h);
                 JSObject ret = new JSObject();
                 ret.put("durationUs", player.getDurationUs());
                 call.resolve(ret);
@@ -137,6 +219,24 @@ public class PeekPreviewPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void setJoinAlpha(PluginCall call) {
+        float alpha = call.getFloat("alpha", 0f);
+        getActivity().runOnUiThread(() -> {
+            if (player != null) player.setJoinAlpha(alpha);
+            call.resolve();
+        });
+    }
+
+    @PluginMethod
+    public void setNeedsDual(PluginCall call) {
+        boolean on = call.getBoolean("on", false);
+        getActivity().runOnUiThread(() -> {
+            if (player != null) player.setNeedsDual(on);
+            call.resolve();
+        });
+    }
+
+    @PluginMethod
     public void release(PluginCall call) {
         getActivity().runOnUiThread(() -> {
             if (player != null) {
@@ -145,11 +245,6 @@ public class PeekPreviewPlugin extends Plugin {
             }
             call.resolve();
         });
-    }
-
-    /** Called from a future native SurfaceView / TextureView host when the surface is ready. */
-    public void setSurface(Surface surface) {
-        this.surface = surface;
     }
 
     @Override
@@ -165,5 +260,12 @@ public class PeekPreviewPlugin extends Plugin {
             player.release();
             player = null;
         }
+        if (surfaceHost != null) {
+            ViewGroup parent = (ViewGroup) surfaceHost.getParent();
+            if (parent != null) parent.removeView(surfaceHost);
+            surfaceHost = null;
+        }
+        surface = null;
+        surfaceReady = false;
     }
 }
