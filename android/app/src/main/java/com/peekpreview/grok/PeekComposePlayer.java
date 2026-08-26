@@ -37,11 +37,12 @@ public final class PeekComposePlayer implements Choreographer.FrameCallback {
     private long durationUs;
     private boolean needsDual;
 
-    // Simple single-clip plan for first version
     private String path;
     private float cropL = 0f, cropT = 0f, cropR = 1f, cropB = 1f;
     private int rotation;
     private float joinAlpha;
+    private int viewW;
+    private int viewH;
 
     private AudioManager audioManager;
     private AudioManager.OnAudioFocusChangeListener focusListener;
@@ -68,6 +69,8 @@ public final class PeekComposePlayer implements Choreographer.FrameCallback {
 
         this.path = videoPath;
         this.outputSurface = surface;
+        this.viewW = width;
+        this.viewH = height;
 
         scene = new PeekGlScene();
         scene.init(surface, width, height);
@@ -82,12 +85,38 @@ public final class PeekComposePlayer implements Choreographer.FrameCallback {
         rotation = dec0.getRotation();
         durationUs = dec0.getDurationUs();
 
-        // Second decoder prepared lazily when needsDual becomes true
         needsDual = false;
         currentPtsUs = 0;
         joinAlpha = 0f;
 
         requestFocus();
+    }
+
+    public synchronized void setNeedsDual(boolean on) {
+        if (on == needsDual) return;
+        needsDual = on;
+        if (on && dec1 == null && path != null && st1 != null) {
+            try {
+                dec1 = new PeekVideoDecoder(path);
+                dec1.open(st1);
+                dec1.seekTo(currentPtsUs);
+            } catch (Exception e) {
+                Log.w(TAG, "failed to open second decoder", e);
+                needsDual = false;
+                if (dec1 != null) {
+                    dec1.release();
+                    dec1 = null;
+                }
+            }
+        } else if (!on && dec1 != null) {
+            dec1.release();
+            dec1 = null;
+            joinAlpha = 0f;
+        }
+    }
+
+    public synchronized void setJoinAlpha(float alpha) {
+        joinAlpha = Math.max(0f, Math.min(1f, alpha));
     }
 
     public synchronized void setCrop(float l, float t, float r, float b) {
@@ -119,7 +148,6 @@ public final class PeekComposePlayer implements Choreographer.FrameCallback {
     public synchronized void pause() {
         if (!playing.getAndSet(false)) return;
         Choreographer.getInstance().removeFrameCallback(this);
-        // Force a final draw of the current frame
         drawFrame();
         abandonFocus();
         if (listener != null) {
@@ -157,8 +185,13 @@ public final class PeekComposePlayer implements Choreographer.FrameCallback {
         if (!playing.get() || released.get()) return;
 
         long elapsedMs = System.currentTimeMillis() - startWallMs;
-        // Cap delta to avoid jumps after blocking work
-        long targetUs = startPtsUs + Math.min(elapsedMs, 40) * 1000L + (elapsedMs > 40 ? (elapsedMs - 40) * 1000L : 0);
+        long targetUs = startPtsUs + elapsedMs * 1000L;
+        // Prevent large jumps after blocking decoder work
+        if (targetUs - currentPtsUs > 80_000L) {
+            targetUs = currentPtsUs + 33_000L;
+            startWallMs = System.currentTimeMillis() - (targetUs - startPtsUs) / 1000L;
+        }
+
         if (targetUs >= durationUs) {
             targetUs = durationUs;
             currentPtsUs = targetUs;
